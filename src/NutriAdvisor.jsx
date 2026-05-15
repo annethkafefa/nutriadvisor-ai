@@ -430,6 +430,60 @@ function MealPlanScreen({ profile, onBack, onSave }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// COPY BUTTON
+// ══════════════════════════════════════════════════════════════════════════════
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button onClick={handleCopy} style={{
+      background: copied ? "#dcfce7" : "#f0fdf4",
+      border: `1px solid ${copied ? "#16a34a" : "#bbf7d0"}`,
+      borderRadius: 8, padding: "4px 10px", fontSize: 11.5, fontWeight: 600,
+      color: copied ? "#16a34a" : "#4b7a5a", cursor: "pointer",
+      fontFamily: "inherit", transition: "all 0.2s",
+      display: "flex", alignItems: "center", gap: 4,
+    }}>
+      {copied ? "✅ Copied!" : "📋 Copy"}
+    </button>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEEDBACK BUTTONS
+// ══════════════════════════════════════════════════════════════════════════════
+function FeedbackButtons({ msgIndex }) {
+  const [feedback, setFeedback] = useState(null);
+  const handleFeedback = (type) => {
+    setFeedback(type);
+    track("response_feedback", { response_index: msgIndex, feedback: type });
+  };
+  return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <button onClick={() => handleFeedback("up")} disabled={!!feedback} style={{
+        background: feedback === "up" ? "#dcfce7" : "#f0fdf4",
+        border: `1px solid ${feedback === "up" ? "#16a34a" : "#bbf7d0"}`,
+        borderRadius: 8, padding: "4px 10px", fontSize: 13,
+        cursor: feedback ? "default" : "pointer", transition: "all 0.2s", fontFamily: "inherit",
+      }}>👍</button>
+      <button onClick={() => handleFeedback("down")} disabled={!!feedback} style={{
+        background: feedback === "down" ? "#fee2e2" : "#f0fdf4",
+        border: `1px solid ${feedback === "down" ? "#ef4444" : "#bbf7d0"}`,
+        borderRadius: 8, padding: "4px 10px", fontSize: 13,
+        cursor: feedback ? "default" : "pointer", transition: "all 0.2s", fontFamily: "inherit",
+      }}>👎</button>
+      {feedback === "up" && <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 600 }}>Asante! 😊</span>}
+      {feedback === "down" && <span style={{ fontSize: 11, color: "#ef4444", fontWeight: 600 }}>Tutaboresha!</span>}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // CHAT SCREEN
 // ══════════════════════════════════════════════════════════════════════════════
 function TypingIndicator() {
@@ -523,8 +577,16 @@ function ChatScreen({ profile, chat, onBack, onSave }) {
           {messages.map((msg, i) => (
             <div key={i} style={cs.bubbleRow(msg.role)}>
               {msg.role === "assistant" && <div style={cs.avatarIcon}>🥦</div>}
-              <div style={cs.bubble(msg.role)}>
-                {msg.role === "assistant" ? renderMarkdown(msg.content) : <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{msg.content}</p>}
+              <div style={{ maxWidth: "82%", display: "flex", flexDirection: "column", gap: 5 }}>
+                <div style={cs.bubble(msg.role)}>
+                  {msg.role === "assistant" ? renderMarkdown(msg.content) : <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0 }}>{msg.content}</p>}
+                </div>
+                {msg.role === "assistant" && (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <CopyButton text={msg.content} />
+                    <FeedbackButtons msgIndex={i} />
+                  </div>
+                )}
               </div>
               {msg.role === "user" && <div style={{ ...cs.avatarIcon, fontSize: 20 }}>{profile.avatar}</div>}
             </div>
