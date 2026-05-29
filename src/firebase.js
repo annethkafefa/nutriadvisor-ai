@@ -3,13 +3,6 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  authDomain: "nutriadvisor-c11da.firebaseapp.com",
-  databaseURL: "https://nutriadvisor-c11da-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "nutriadvisor-c11da",
-
-  // Add these later from Firebase console:
-   // Add these later from Firebase console:
-  const firebaseConfig = {
   apiKey: "AIzaSyAAjfl5AXKTUYoSD1vEfZy4Tpp6ylhEodo",
   authDomain: "nutriadvisor-c11da.firebaseapp.com",
   databaseURL: "https://nutriadvisor-c11da-default-rtdb.europe-west1.firebasedatabase.app",
