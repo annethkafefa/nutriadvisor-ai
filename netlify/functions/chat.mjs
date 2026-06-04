@@ -1,43 +1,59 @@
-export default async (request) => {
-  if (request.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
-  }
+// netlify/functions/chat.js
+// This runs on Netlify's servers — users never see this file
+// Your API key is safe here
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: "API key not configured." }), {
-      status: 500, headers: { "Content-Type": "application/json" },
-    });
+exports.handler = async (event) => {
+  // Only allow POST requests
+  if (event.httpMethod !== "POST") {
+    return { statusCode: 405, body: "Method not allowed" };
   }
 
   try {
-    const body = await request.json();
+    const { messages, systemPrompt } = JSON.parse(event.body);
 
-    // Forward to Anthropic with stream: true
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // Call OpenAI API from server side — key never exposed to users
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        // API key stored in Netlify environment variable — never in code
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({ ...body, stream: true }),
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        max_tokens: 800,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages
+        ],
+      }),
     });
 
-    // Stream the response directly back to the browser
-    return new Response(response.body, {
-      status: response.status,
+    const data = await response.json();
+
+    if (data.error) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: data.error.message })
+      };
+    }
+
+    const reply = data.choices?.[0]?.message?.content || "Samahani, jaribu tena.";
+
+    return {
+      statusCode: 200,
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Content-Type": "application/json",
+        // Allow your app to call this function
         "Access-Control-Allow-Origin": "*",
       },
-    });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: "Proxy error: " + err.message }), {
-      status: 500, headers: { "Content-Type": "application/json" },
-    });
+      body: JSON.stringify({ reply }),
+    };
+
+  } catch (error) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: error.message })
+    };
   }
 };
-
-export const config = { path: "/api/chat" };
